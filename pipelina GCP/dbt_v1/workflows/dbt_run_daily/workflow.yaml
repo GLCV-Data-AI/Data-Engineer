@@ -1,0 +1,33 @@
+main:
+  params: [input]
+  steps:
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - location: "us-central1"
+          - job_name: "dbt-run-daily"
+          
+    - log_start:
+        call: sys.log
+        args:
+          text: "Iniciando ejecución diaria de modelos DBT"
+          severity: "INFO"
+          
+    - run_dbt_job:
+        call: http.post
+        args:
+          url: ${"https://" + location + "-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/" + project_id + "/jobs/" + job_name + ":run"}
+          auth:
+            type: OAuth2
+          body:
+            timeout: "3600s"
+        result: job_execution
+          
+    - check_job_status:
+        call: sys.log
+        args:
+          text: ${"Ejecución del trabajo DBT completada: " + json.encode(job_execution)}
+          severity: "INFO"
+          
+    - return_result:
+        return: ${job_execution} 

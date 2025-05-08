@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: bronze_example
+    description: "Ejemplo de modelo de capa bronze"
+    config:
+      tags: ["bronze"]
+    columns:
+      - name: id
+        description: "Identificador único"
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: "Fecha de creación"
+        tests:
+          - not_null
+      - name: updated_at
+        description: "Fecha de actualización"
+      - name: source_system
+        description: "Sistema fuente del registro"
+        tests:
+          - not_null 

@@ -1,0 +1,11 @@
+name: dbt-bronze-layer
+schedule: 0 2 * * *
+time_zone: America/Bogota
+cpu: "1"
+memory: "2Gi"
+description: "Trabajo que ejecuta los modelos de la capa Bronze diariamente"
+massive_roles:
+  service-account-bigquery-admin: "roles/bigquery.admin"
+  service-account-invoker: "roles/run.invoker"
+  service-account-storage-admin: "roles/storage.admin"
+utils_path: dbt_project 
