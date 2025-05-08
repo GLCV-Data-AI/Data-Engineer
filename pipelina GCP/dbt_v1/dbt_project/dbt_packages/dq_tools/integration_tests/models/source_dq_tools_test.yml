@@ -1,0 +1,81 @@
+version: 2
+
+sources:
+  - name: dq_tools_test
+    # mimic default generate_database_name()
+    database: "{{ var('dbt_dq_tool_database', target.database) }}"
+    # mimic default generate_schema_name()
+    schema: "{{ target.schema ~ '_' ~ var('dbt_dq_tool_schema', target.schema) }}"
+    tables:
+      - name: dq_issue_log
+        data_tests:
+          - dq_tools.expression_is_true_db:
+              where: coalesce(ref_column,'') != ''
+              expression: coalesce(ref_table,'') != ''
+        columns:
+          - name: check_timestamp
+            data_tests:
+              - dq_tools.not_null_where_db
+          - name: table_name
+            data_tests:
+              - dq_tools.not_null_where_db
+          - name: dq_issue_type
+            data_tests:
+              - dq_tools.not_null_where_db
+          - name: invocation_id
+            data_tests:
+              - dq_tools.not_null_where_db
+          - name: dq_model
+            data_tests:
+              - dq_tools.not_null_where_db
+              - dq_tools.expression_is_true_db:  # singular test error should not exists
+                  expression: dq_model != 'assert_intentional_error'
+              - dq_tools.expression_is_true_db: # generic test error should not exists
+                  where: table_name like '%.test_failures' and coalesce(column_name,'') = ''
+                  expression: dq_model not like 'dq_tools_expression_is_true_db_test_failures_1_0%'
+          - name: severity
+            data_tests:
+              - dq_tools.not_null_where_db
+              - dq_tools.accepted_values_where_db:
+                  values: [
+                    'warn',
+                    'error'
+                  ]
+          - name: kpi_category
+            data_tests:
+              - dq_tools.not_null_where_db
+              - dq_tools.accepted_values_where_db:
+                  values: [
+                    'Other',
+                    'Uniqueness',
+                    'Consistency',
+                    'Validity',
+                    'Timeliness',
+                    'Completeness',
+                    'Accuracy',
+                  ]
+          - name: no_of_records
+            data_tests:
+              - dq_tools.not_null_where_db:
+                  where: coalesce(table_name,'') != ''
+              - dq_tools.expression_is_true_db:
+                  where: coalesce(ref_table,'') != ''
+                  expression: no_of_records >= 0
+          - name: no_of_records_scanned
+            data_tests:
+              - dq_tools.not_null_where_db:
+                  where: coalesce(table_name,'') != ''
+              - dq_tools.expression_is_true_db:
+                  where: coalesce(ref_table,'') != ''
+                  expression: no_of_records >= 0
+          - name: no_of_records_failed
+            data_tests:
+              - dq_tools.not_null_where_db
+              - dq_tools.expression_is_true_db:
+                  expression: no_of_records_failed >= 0
+              - dq_tools.expression_is_true_db:
+                  where: lower(dq_model) like '%failure%'
+                  expression: no_of_records_failed > 0
+          - name: test_unique_id
+            data_tests:
+              - dq_tools.not_null_where_db
