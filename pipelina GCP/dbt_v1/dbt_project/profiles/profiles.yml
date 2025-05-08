@@ -1,0 +1,21 @@
+dbt_project_v1:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: bronze
+      threads: 4
+      timeout_seconds: 300
+      location: US
+      priority: interactive
+    prod:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: bronze
+      threads: 8
+      timeout_seconds: 600
+      location: US
+      priority: interactive 

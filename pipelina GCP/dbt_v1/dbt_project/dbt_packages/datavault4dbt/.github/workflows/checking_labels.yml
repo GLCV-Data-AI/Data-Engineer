@@ -1,0 +1,46 @@
+name: "Checking Labels"
+
+#Workflow to provide needed information for a remote workflow trigger through testing label.
+
+permissions:
+  issues: write
+
+#Will be triggered if label is added to a pull request with the main branch as target.
+on: 
+  pull_request:
+    types: [labeled]
+    branches:
+      - main
+
+#Concurrency group to avoid grabbing false artifacts.
+concurrency:
+  group: trigger-group
+  cancel-in-progress: false
+  
+# Checking if the 'testing' label is attached to the Pull Request. 
+# Saving information about testing label and PR ID as artifact for further processing.
+jobs: 
+  checking-labels: 
+      runs-on: ubuntu-latest
+      steps:
+        - name: 
+          id: checking-labels
+          env: 
+            LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'testing') }}
+            PRID: ${{ github.event.number }}
+          run: |
+            mkdir -p ./label
+            echo $LABEL > ./label/label
+            echo $LABEL
+            mkdir -p ./prid
+            echo $PRID > ./prid/prid
+            echo $PRID
+        - uses: actions/upload-artifact@v4
+          with:
+            name: label
+            path: label/
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: prid
+            path: prid/

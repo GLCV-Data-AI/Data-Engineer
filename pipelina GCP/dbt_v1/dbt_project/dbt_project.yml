@@ -1,0 +1,46 @@
+name: 'dbt_project_v1'
+version: '1.0.0'
+
+# Este ajuste configura qué "perfil" utiliza dbt para este proyecto.
+profile: 'dbt_project_v1'
+
+# Estas configuraciones especifican dónde debe buscar dbt diferentes tipos de archivos.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directorios que se eliminarán con `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Configuración de modelos
+# Documentación completa: https://docs.getdbt.com/docs/configuring-models
+models:
+  dbt_project_v1:
+    # La configuración indicada por + se aplica a todos los archivos bajo los directorios
+    bronze:
+      +materialized: view
+      +schema: "bronze"
+    silver:
+      +materialized: table
+      +schema: "silver"
+    gold:
+      +materialized: table
+      +schema: "gold"
+    dq_tools:
+      +enabled: true
+      +materialized: table
+      +schema: "{{ var('dbt_dq_tool_schema', 'dq_results') }}"
+      +database: "{{ var('dbt_dq_tool_database', target.database) }}"
+
+vars:
+  "dbt_date:time_zone": "America/Bogota"
+  # Configuración de dq_tools
+  dbt_dq_tool_schema: "dq_results"  # Schema donde se almacenarán los resultados de calidad
+  dbt_dq_tool_database: "{{ target.database }}"  # Usa la misma base de datos que el proyecto
+  dq_tools_enable_store_test_results: true  # Habilita el almacenamiento de resultados de tests
+
+on-run-end: "{{ dq_tools.store_test_results(results) }}" 

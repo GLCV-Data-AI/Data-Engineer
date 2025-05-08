@@ -1,0 +1,3 @@
+name: dbt-pipeline-v1
+runtime: python
+description: Infraestructura para proyecto DBT con despliegue en GCP 

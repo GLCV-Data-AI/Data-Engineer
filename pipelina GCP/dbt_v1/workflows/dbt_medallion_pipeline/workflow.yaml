@@ -1,0 +1,122 @@
+main:
+  params: [input]
+  steps:
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - location: "us-central1"
+          - bronze_job: "dbt-bronze-layer"
+          - silver_job: "dbt-silver-layer"
+          - gold_job: "dbt-gold-layer"
+          - slack_webhook: ${sys.get_env("SLACK_WEBHOOK_URL")}
+          
+    - log_start:
+        call: sys.log
+        args:
+          text: "Iniciando pipeline medallion: bronze → silver → gold"
+          severity: "INFO"
+    
+    # Ejecutar capa Bronze
+    - run_bronze:
+        try:
+          call: http.post
+          args:
+            url: ${"https://" + location + "-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/" + project_id + "/jobs/" + bronze_job + ":run"}
+            auth:
+              type: OAuth2
+            body:
+              timeout: "3600s"
+          result: bronze_execution
+        except:
+          as: e
+          steps:
+            - log_bronze_error:
+                call: sys.log
+                args:
+                  text: ${"Error en capa bronze: " + json.encode(e)}
+                  severity: "ERROR"
+            - notify_error_bronze:
+                call: http.post
+                args:
+                  url: ${slack_webhook}
+                  body:
+                    text: ${"⚠️ Error en capa Bronze: " + json.encode(e)}
+            - return_error:
+                return:
+                  error: ${e}
+                  stage: "bronze"
+    
+    # Ejecutar capa Silver (solo si Bronze fue exitoso)
+    - run_silver:
+        try:
+          call: http.post
+          args:
+            url: ${"https://" + location + "-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/" + project_id + "/jobs/" + silver_job + ":run"}
+            auth:
+              type: OAuth2
+            body:
+              timeout: "3600s"
+          result: silver_execution
+        except:
+          as: e
+          steps:
+            - log_silver_error:
+                call: sys.log
+                args:
+                  text: ${"Error en capa silver: " + json.encode(e)}
+                  severity: "ERROR"
+            - notify_error_silver:
+                call: http.post
+                args:
+                  url: ${slack_webhook}
+                  body:
+                    text: ${"⚠️ Error en capa Silver: " + json.encode(e)}
+            - return_error:
+                return:
+                  error: ${e}
+                  stage: "silver"
+    
+    # Ejecutar capa Gold (solo si Silver fue exitoso)
+    - run_gold:
+        try:
+          call: http.post
+          args:
+            url: ${"https://" + location + "-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/" + project_id + "/jobs/" + gold_job + ":run"}
+            auth:
+              type: OAuth2
+            body:
+              timeout: "3600s"
+          result: gold_execution
+        except:
+          as: e
+          steps:
+            - log_gold_error:
+                call: sys.log
+                args:
+                  text: ${"Error en capa gold: " + json.encode(e)}
+                  severity: "ERROR"
+            - notify_error_gold:
+                call: http.post
+                args:
+                  url: ${slack_webhook}
+                  body:
+                    text: ${"⚠️ Error en capa Gold: " + json.encode(e)}
+            - return_error:
+                return:
+                  error: ${e}
+                  stage: "gold"
+    
+    # Notificar éxito completo
+    - notify_success:
+        call: http.post
+        args:
+          url: ${slack_webhook}
+          body:
+            text: "✅ Pipeline medallion completada exitosamente"
+    
+    - return_success:
+        return:
+          status: "success"
+          bronze: ${bronze_execution}
+          silver: ${silver_execution}
+          gold: ${gold_execution} 

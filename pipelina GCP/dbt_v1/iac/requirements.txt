@@ -1,0 +1,5 @@
+pulumi>=3.0.0
+pulumi-gcp>=6.0.0
+pulumi-docker>=4.0.0
+pulumi_random>=4.0.0
+pyyaml>=6.0.0 

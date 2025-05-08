@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: artifacts_seed
+    schema: dq_tools_integration_tests_seed
+    tables:
+      - name: data_test__get_where_subquery
+
+models:
+  - name: test__get_test_model
+    data_tests:
+      - dq_tools.expression_is_true_db:
+          expression: actual = expected
+  - name: test__get_test_name
+    data_tests:
+      - dq_tools.expression_is_true_db:
+          expression: actual = expected
+  - name: test__get_test_type
+    data_tests:
+      - dq_tools.expression_is_true_db:
+          expression: actual = expected
+  - name: test__get_where_subquery
+    data_tests:
+      - dq_tools.expression_is_true_db:
+          expression: actual = expected
+  - name: test__get_test_description
+    data_tests:
+      - dq_tools.expression_is_true_db:
+          expression: actual = expected
+  
